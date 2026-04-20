@@ -1,0 +1,38 @@
+{
+  "name": "tds/backend",
+  "type": "project",
+  "description": "Traffic Distribution System backend skeleton.",
+  "require": {
+    "php": "^8.3",
+    "laravel/framework": "^12.0"
+  },
+  "require-dev": {
+    "mockery/mockery": "^1.6",
+    "phpunit/phpunit": "^11.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Database\\Seeders\\": "database/seeders/",
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "post-install-cmd": [
+      "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+    ],
+    "lint": [
+      "@php -l artisan",
+      "@php -l bootstrap/app.php",
+      "@php -l routes/api.php",
+      "@php -l routes/web.php"
+    ],
+    "test": [
+      "@php vendor/bin/phpunit"
+    ]
+  }
+}

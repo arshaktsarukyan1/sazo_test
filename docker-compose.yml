@@ -1,0 +1,157 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: tds-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - tds-net
+
+  frontend:
+    image: node:20-alpine
+    container_name: tds-frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --hostname 0.0.0.0 --port 3000"
+    environment:
+      NODE_ENV: development
+      TDS_BACKEND_URL: http://backend:8000
+      TDS_INTERNAL_API_TOKEN: test-internal-token
+      NEXT_PUBLIC_TDS_PUBLIC_ORIGIN: http://localhost
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    expose:
+      - "3000"
+    networks:
+      - tds-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tds-backend
+    working_dir: /var/www/html
+    command: sh -c "composer install --prefer-dist --no-interaction && php artisan serve --host=0.0.0.0 --port=8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost
+      INTERNAL_API_TOKEN: test-internal-token
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: tds
+      DB_USERNAME: tds
+      DB_PASSWORD: tds
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    expose:
+      - "8000"
+    networks:
+      - tds-net
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tds-worker
+    working_dir: /var/www/html
+    command: sh -c "while [ ! -f /var/www/html/vendor/autoload.php ]; do echo 'Waiting for composer install...'; sleep 2; done; php artisan queue:work --tries=3 --timeout=120"
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: tds
+      DB_USERNAME: tds
+      DB_PASSWORD: tds
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      backend:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - tds-net
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tds-scheduler
+    working_dir: /var/www/html
+    command: sh -c "while [ ! -f /var/www/html/vendor/autoload.php ]; do echo 'Waiting for composer install...'; sleep 2; done; while true; do php artisan schedule:run; sleep 60; done"
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: tds
+      DB_USERNAME: tds
+      DB_PASSWORD: tds
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      backend:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - tds-net
+
+  db:
+    image: mysql:8.4
+    container_name: tds-db
+    environment:
+      MYSQL_DATABASE: tds
+      MYSQL_USER: tds
+      MYSQL_PASSWORD: tds
+      MYSQL_ROOT_PASSWORD: tds
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-ptds"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - tds-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: tds-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - tds-net
+
+volumes:
+  mysqldata:
+
+networks:
+  tds-net:
+    driver: bridge

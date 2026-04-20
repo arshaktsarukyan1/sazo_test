@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('campaign_landers', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('campaign_id')->constrained('campaigns')->cascadeOnDelete();
+            $table->foreignId('lander_id')->constrained('landers')->cascadeOnDelete();
+            $table->unsignedSmallInteger('weight_percent');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+
+            $table->unique(['campaign_id', 'lander_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('campaign_landers');
+    }
+};

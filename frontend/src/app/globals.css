@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-100 text-slate-900 antialiased;
+  }
+
+  /* Baseline keyboard focus: high-contrast ring, no removal of browser focus */
+  :where(a, button, input, select, textarea, summary):focus-visible {
+    @apply outline-none ring-2 ring-slate-900 ring-offset-2 ring-offset-slate-100;
+  }
+}

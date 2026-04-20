@@ -1,0 +1,50 @@
+# =====================
+# Laravel (Backend)
+# =====================
+backend/vendor/
+backend/.env
+backend/.phpunit.result.cache
+backend/bootstrap/cache/
+
+backend/storage/*
+!backend/storage/app/public/
+
+# =====================
+# Next.js (Frontend)
+# =====================
+frontend/node_modules/
+frontend/.next/
+frontend/.next/cache/
+frontend/out/
+frontend/.env*
+
+# =====================
+# Global env
+# =====================
+.env
+.env.*
+
+# =====================
+# Package managers
+# =====================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =====================
+# IDE
+# =====================
+.idea/
+.vscode/
+
+# =====================
+# OS
+# =====================
+.DS_Store
+
+# =====================
+# Logs
+# =====================
+*.log
