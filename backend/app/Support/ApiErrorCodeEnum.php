@@ -5,7 +5,7 @@ namespace App\Support;
 /**
  * Canonical API error codes. Prefer these over raw strings so HTTP status ↔ code stays consistent.
  */
-enum ApiErrorCode: string
+enum ApiErrorCodeEnum: string
 {
     case BadRequest = 'bad_request';
     case Unauthenticated = 'unauthenticated';

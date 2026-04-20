@@ -3,7 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\ApiError;
-use App\Support\ApiErrorCode;
+use App\Support\ApiErrorCodeEnum;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +21,7 @@ class InternalApiAuth
                 503,
                 [],
                 $request,
-                ApiErrorCode::ServiceUnavailable,
+                ApiErrorCodeEnum::ServiceUnavailable,
             );
         }
 
@@ -41,7 +41,7 @@ class InternalApiAuth
             401,
             [],
             $request,
-            ApiErrorCode::Unauthenticated,
+            ApiErrorCodeEnum::Unauthenticated,
         );
     }
 }

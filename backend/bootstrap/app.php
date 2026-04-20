@@ -3,7 +3,7 @@
 use App\Http\Controllers\Webhooks\ShopifyWebhookController;
 use App\Http\Middleware\AssignCorrelationId;
 use App\Support\ApiError;
-use App\Support\ApiErrorCode;
+use App\Support\ApiErrorCodeEnum;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -51,7 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $e->status,
                 $e->errors(),
                 $request,
-                ApiErrorCode::ValidationFailed,
+                ApiErrorCodeEnum::ValidationFailed,
             );
         });
 
@@ -65,7 +65,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 401,
                 [],
                 $request,
-                ApiErrorCode::Unauthenticated,
+                ApiErrorCodeEnum::Unauthenticated,
             );
         });
 
@@ -84,7 +84,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 404,
                 [],
                 $request,
-                ApiErrorCode::NotFound,
+                ApiErrorCodeEnum::NotFound,
             );
         });
 
@@ -100,7 +100,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 403,
                 [],
                 $request,
-                ApiErrorCode::Forbidden,
+                ApiErrorCodeEnum::Forbidden,
             );
         });
 
@@ -119,7 +119,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $status,
                 [],
                 $request,
-                ApiErrorCode::fromHttpStatus($status),
+                ApiErrorCodeEnum::fromHttpStatus($status),
             );
         });
     })->create();

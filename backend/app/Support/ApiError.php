@@ -51,12 +51,12 @@ final class ApiError
         int $status,
         array $errors = [],
         ?Request $request = null,
-        ?ApiErrorCode $code = null,
+        ?ApiErrorCodeEnum $code = null,
     ): JsonResponse {
         $request ??= request();
         $resolvedCode = $code ?? (self::nonEmptyErrors($errors)
-            ? ApiErrorCode::ValidationFailed
-            : ApiErrorCode::fromHttpStatus($status));
+            ? ApiErrorCodeEnum::ValidationFailed
+            : ApiErrorCodeEnum::fromHttpStatus($status));
 
         $payload = self::buildPayload($request, $message, $resolvedCode, $status, $errors);
 
@@ -93,7 +93,7 @@ final class ApiError
         $data['correlation_id'] = $cid;
 
         if (! isset($data['error']) || ! is_string($data['error']) || $data['error'] === '') {
-            $data['error'] = ApiErrorCode::fromHttpStatus($response->getStatusCode())->value;
+            $data['error'] = ApiErrorCodeEnum::fromHttpStatus($response->getStatusCode())->value;
         }
 
         if (isset($data['errors']) && is_array($data['errors']) && ! isset($data['error_fields'])) {
@@ -156,7 +156,7 @@ final class ApiError
     private static function buildPayload(
         Request $request,
         string $message,
-        ApiErrorCode $code,
+        ApiErrorCodeEnum $code,
         int $status,
         array $errors,
     ): array {
@@ -185,7 +185,7 @@ final class ApiError
     private static function logApiError(
         Request $request,
         int $status,
-        ApiErrorCode $code,
+        ApiErrorCodeEnum $code,
         string $message,
         array $errors,
     ): void {
