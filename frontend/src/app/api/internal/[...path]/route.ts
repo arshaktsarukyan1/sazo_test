@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 
 function backendBase(): string {
   const fromEnv = process.env.TDS_BACKEND_URL?.trim().replace(/\/$/, "") ?? "";
-  // Default: repo docker-compose exposes Laravel via nginx on host port 80.
+  // Default: host `npm run dev` with nginx on :80 or local artisan (see frontend/.env.example).
   return fromEnv || "http://localhost";
 }
 
@@ -40,7 +40,7 @@ async function proxy(req: NextRequest, pathSegments: string[]): Promise<Response
     const reason = err instanceof Error ? err.message : String(err);
     return Response.json(
       {
-        message: `Cannot reach Laravel at ${target} (${reason}). Set TDS_BACKEND_URL in frontend/.env.local — e.g. http://localhost for Docker/nginx, or http://127.0.0.1:8000 for php artisan serve.`,
+        message: `Cannot reach Laravel at ${target} (${reason}). Set TDS_BACKEND_URL in frontend/.env.local — e.g. http://127.0.0.1:8000 for local artisan, http://localhost when Next runs on the host behind nginx, or http://backend:8000 when Next runs in Docker Compose.`,
       },
       { status: 502 },
     );
