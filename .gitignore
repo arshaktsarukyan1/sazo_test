@@ -23,7 +23,7 @@ frontend/.env*
 # =====================
 .env
 .env.*
-
+!.env.example
 # =====================
 # Package managers
 # =====================

@@ -13,6 +13,7 @@ use App\Support\ApiError;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -51,6 +52,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (! extension_loaded('redis') && config('cache.default') === 'redis') {
+            Config::set('cache.default', 'file');
+        }
+
         RateLimiter::for('auth.register', function (Request $request): Limit {
             return Limit::perMinute((int) config('tds.auth_register_rate_limit_per_minute', 10))
                 ->by((string) $request->ip());
