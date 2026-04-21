@@ -9,5 +9,7 @@ export function slugify(name: string): string {
 }
 
 export function activeSum(rows: SplitRow[]): number {
-  return rows.filter((r) => r.is_active).reduce((s, r) => s + r.weight_percent, 0);
+  return rows
+    .filter((r) => r.is_active)
+    .reduce((s, r) => s + Number(r.weight_percent || 0), 0);
 }

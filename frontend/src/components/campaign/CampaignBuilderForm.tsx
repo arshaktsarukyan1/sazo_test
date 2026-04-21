@@ -44,6 +44,21 @@ type CampaignBuilderFormProps = {
   campaignId?: number;
 };
 
+/** Pivot booleans from JSON may be 0/1 or strings; avoid Boolean("0") === true. */
+function pivotBool(value: unknown): boolean {
+  if (value === true || value === 1) {
+    return true;
+  }
+  if (value === false || value === 0) {
+    return false;
+  }
+  if (typeof value === "string") {
+    const t = value.trim().toLowerCase();
+    return t === "1" || t === "true" || t === "yes";
+  }
+  return false;
+}
+
 export function CampaignBuilderForm({ campaignId }: CampaignBuilderFormProps) {
   const router = useRouter();
   const isNew = !campaignId;
@@ -74,23 +89,80 @@ export function CampaignBuilderForm({ campaignId }: CampaignBuilderFormProps) {
   const [landers, setLanders] = useState<Lander[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [trafficSources, setTrafficSources] = useState<TrafficSource[]>([]);
+  /** Names from last successful campaign load — keeps selects valid when a pivot id is missing from catalog lists. */
+  const [loadedSplitMeta, setLoadedSplitMeta] = useState<{
+    landers: Array<{ id: number; name: string }>;
+    offers: Array<{ id: number; name: string }>;
+  }>({ landers: [], offers: [] });
+  /** Campaign's domain from API when it is not returned by the domains index (e.g. legacy row). */
+  const [loadedCampaignDomain, setLoadedCampaignDomain] = useState<DomainRow | null>(null);
+
+  const domainChoices = useMemo(() => {
+    if (!loadedCampaignDomain) {
+      return domains;
+    }
+    if (domains.some((d) => d.id === loadedCampaignDomain.id)) {
+      return domains;
+    }
+    return [...domains, loadedCampaignDomain].sort((a, b) => a.id - b.id);
+  }, [domains, loadedCampaignDomain]);
 
   const selectedDomain = useMemo(
-    () => domains.find((d) => d.id === domainId) ?? null,
-    [domains, domainId],
+    () => domainChoices.find((d) => d.id === domainId) ?? null,
+    [domainChoices, domainId],
   );
 
-  const landerOptions = useMemo(
-    () => landers.map((l) => ({ id: l.id, label: l.name })),
-    [landers],
-  );
-  const offerOptions = useMemo(
-    () => offers.map((o) => ({ id: o.id, label: o.name })),
-    [offers],
-  );
+  const landerOptions = useMemo(() => {
+    const byId = new Map<number, { id: number; label: string }>();
+    for (const l of landers) {
+      byId.set(l.id, { id: l.id, label: l.name });
+    }
+    for (const meta of loadedSplitMeta.landers) {
+      if (!byId.has(meta.id)) {
+        byId.set(meta.id, { id: meta.id, label: `${meta.name} (not in catalog)` });
+      }
+    }
+    for (const r of landerRows) {
+      if (!byId.has(r.id)) {
+        byId.set(r.id, { id: r.id, label: `Lander #${r.id} (not in catalog)` });
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.id - b.id);
+  }, [landers, landerRows, loadedSplitMeta.landers]);
+
+  const offerOptions = useMemo(() => {
+    const byId = new Map<number, { id: number; label: string }>();
+    for (const o of offers) {
+      byId.set(o.id, { id: o.id, label: o.name });
+    }
+    for (const meta of loadedSplitMeta.offers) {
+      if (!byId.has(meta.id)) {
+        byId.set(meta.id, { id: meta.id, label: `${meta.name} (not in catalog)` });
+      }
+    }
+    for (const r of offerRows) {
+      if (!byId.has(r.id)) {
+        byId.set(r.id, { id: r.id, label: `Offer #${r.id} (not in catalog)` });
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.id - b.id);
+  }, [offers, offerRows, loadedSplitMeta.offers]);
 
   const landerSplitValid = landerRows.length === 0 || activeSum(landerRows) === 100;
   const offerSplitValid = offerRows.length === 0 || activeSum(offerRows) === 100;
+
+  const targetingOffers = useMemo(() => {
+    const byId = new Map<number, { id: number; name: string }>();
+    for (const o of offers) {
+      byId.set(o.id, { id: o.id, name: o.name });
+    }
+    for (const meta of loadedSplitMeta.offers) {
+      if (!byId.has(meta.id)) {
+        byId.set(meta.id, { id: meta.id, name: meta.name });
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.id - b.id);
+  }, [offers, loadedSplitMeta.offers]);
 
   const loadCampaign = useCallback(async () => {
     if (!campaignId) {
@@ -113,16 +185,26 @@ export function CampaignBuilderForm({ campaignId }: CampaignBuilderFormProps) {
       setLanderRows(
         (data.landers ?? []).map((row) => ({
           id: row.id,
-          weight_percent: row.pivot.weight_percent,
-          is_active: Boolean(row.pivot.is_active),
+          weight_percent: Number(row.pivot.weight_percent),
+          is_active: pivotBool(row.pivot.is_active),
         })),
       );
       setOfferRows(
         (data.offers ?? []).map((row) => ({
           id: row.id,
-          weight_percent: row.pivot.weight_percent,
-          is_active: Boolean(row.pivot.is_active),
+          weight_percent: Number(row.pivot.weight_percent),
+          is_active: pivotBool(row.pivot.is_active),
         })),
+      );
+      setLoadedSplitMeta({
+        landers: (data.landers ?? []).map((row) => ({ id: row.id, name: row.name })),
+        offers: (data.offers ?? []).map((row) => ({ id: row.id, name: row.name })),
+      });
+      setLoadedCampaignDomain(
+        data.domain ??
+          (data.domain_id != null
+            ? { id: data.domain_id, name: `Domain #${data.domain_id}` }
+            : null),
       );
       setSlugTouched(true);
     } catch (e) {
@@ -373,7 +455,7 @@ export function CampaignBuilderForm({ campaignId }: CampaignBuilderFormProps) {
                   }
                 >
                   <option value="">Default (public origin)</option>
-                  {domains.map((d) => (
+                  {domainChoices.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}
                     </option>
@@ -444,7 +526,7 @@ export function CampaignBuilderForm({ campaignId }: CampaignBuilderFormProps) {
             onChange={setOfferRows}
           />
 
-          <TargetingRulesSection campaignId={id} offers={offers.map((o) => ({ id: o.id, name: o.name }))} />
+          <TargetingRulesSection campaignId={id} offers={targetingOffers} />
 
           {id ? (
             <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
