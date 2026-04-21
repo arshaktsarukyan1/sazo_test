@@ -82,9 +82,9 @@ final class ReportingService
             ->join('campaigns', 'campaigns.id', '=', 'clicks.campaign_id')
             ->where('campaigns.user_id', $userId)
             ->where('clicks.campaign_id', $campaignId)
-            ->whereBetween('created_at', [$from, $to])
-            ->when($countryCode !== null, fn ($q) => $q->where('country_code', $countryCode))
-            ->when($deviceType !== null, fn ($q) => $q->where('device_type', $deviceType))
+            ->whereBetween('clicks.created_at', [$from, $to])
+            ->when($countryCode !== null, fn ($q) => $q->where('clicks.country_code', $countryCode))
+            ->when($deviceType !== null, fn ($q) => $q->where('clicks.device_type', $deviceType))
             ->count();
 
         $totalCost = (float) CostEntry::query()

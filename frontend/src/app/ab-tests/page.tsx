@@ -215,10 +215,6 @@ export default function AbTestsPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-base font-semibold text-slate-900">Winner suggestion</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Window: <span className="font-medium text-slate-900">{data.window.from}</span>{" "}
-                  → <span className="font-medium text-slate-900">{data.window.to}</span>
-                </p>
               </div>
               <div className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-900">
                 <span className="font-semibold">{data.recommendation.status}</span>
