@@ -127,7 +127,84 @@ curl -i http://localhost:8081/api/internal/v1/traffic-sources \
 
 ---
 
-## 6) Common issues and fixes
+## 6) Run seeders
+
+Seeders run inside the `backend` container.
+
+Run default seeders (`DatabaseSeeder`):
+
+```bash
+docker compose exec backend php artisan db:seed
+```
+
+Run a specific seeder:
+
+```bash
+docker compose exec backend php artisan db:seed --class=PhaseOneCoreSeeder
+docker compose exec backend php artisan db:seed --class=SyntheticEventSeeder
+docker compose exec backend php artisan db:seed --class=KpiAggregationSeeder
+```
+
+Fresh migration + seed (drops all tables first):
+
+```bash
+docker compose exec backend php artisan migrate:fresh --seed
+```
+
+---
+
+## 7) Generate traffic data manually
+
+If you want dashboard/report data quickly for local testing, use one of these methods.
+
+### Option A (recommended): one command demo dataset
+
+This seeds core data + synthetic events + KPI aggregation:
+
+```bash
+docker compose exec backend php artisan tds:seed-phase1
+```
+
+After this, dashboard/report endpoints should return non-empty data.
+
+### Option B: trigger public tracking flow with curl
+
+1) Find a campaign slug:
+
+```bash
+docker compose exec backend php artisan tinker --execute="echo \App\Models\Campaign::query()->value('slug');"
+```
+
+2) Generate redirects/clicks:
+
+```bash
+SLUG="replace-with-campaign-slug"
+curl -i "http://localhost:8081/api/campaign/${SLUG}"
+curl -i "http://localhost:8081/api/click?campaign=${SLUG}&sid=manual-us-desktop"
+curl -i "http://localhost:8081/api/click?campaign=${SLUG}&sid=manual-fr-mobile"
+```
+
+3) Rebuild KPI aggregates from raw events:
+
+```bash
+docker compose exec backend php artisan tds:aggregate-kpi
+```
+
+4) Verify KPI endpoint:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8081/api/internal/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"devuser@example.com","password":"password123"}' \
+  | php -r '$j=json_decode(stream_get_contents(STDIN), true); echo $j["data"]["token"] ?? "";')
+
+curl -i "http://localhost:8081/api/internal/v1/reports/kpi" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+## 8) Common issues and fixes
 
 ### Port already in use (nginx)
 
@@ -168,7 +245,7 @@ docker compose down
 
 ---
 
-## 7) Notes for developers
+## 9) Notes for developers
 
 - Backend migrations run automatically on backend container start.
 - Frontend API calls use `/api/internal/*` and are proxied correctly through nginx/Next.js.

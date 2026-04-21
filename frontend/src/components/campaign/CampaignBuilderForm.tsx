@@ -74,7 +74,7 @@ export function CampaignBuilderForm({ campaignId }: CampaignBuilderFormProps) {
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [status, setStatus] = useState("draft");
+  const [status, setStatus] = useState("active");
   const [destinationUrl, setDestinationUrl] = useState("https://example.com");
   const [timezone, setTimezone] = useState("UTC");
   const [domainId, setDomainId] = useState<number | "">("");
